@@ -1,0 +1,80 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+datasource db {
+  provider = "postgresql"
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  DELIVERED
+  CANCELLED
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  STAFF
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  packages    Package[]
+
+  @@map("categories")
+}
+
+model Package {
+  id               String   @id @default(uuid())
+  categoryId       String
+  category         Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name             String
+  slug             String   @unique
+  price            Decimal  @db.Decimal(10, 2)
+  description      String
+  items            String[]
+  imageUrl         String?
+  isActive         Boolean  @default(true)
+  facebookPostUrl  String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  orders           Order[]
+
+  @@map("packages")
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  packageId       String
+  package         Package     @relation(fields: [packageId], references: [id])
+  customerName    String
+  phone           String
+  address         String
+  quantity        Int         @default(1)
+  totalPrice      Decimal     @db.Decimal(10, 2)
+  status          OrderStatus @default(PENDING)
+  note            String?
+  source          String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@map("orders")
+}
+
+model Admin {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         AdminRole @default(STAFF)
+  createdAt    DateTime  @default(now())
+
+  @@map("admins")
+}
