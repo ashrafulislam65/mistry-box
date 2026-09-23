@@ -13,7 +13,12 @@ import {
   adminUpdatePackage,
   adminDeletePackage,
 } from "../controllers/package.controller";
-import { adminListOrders, adminUpdateOrderStatus, adminExportOrders } from "../controllers/order.controller";
+import {
+  adminListOrders,
+  adminUpdateOrderStatus,
+  adminExportOrders,
+  adminGetOrderStats,
+} from "../controllers/order.controller";
 
 const router = Router();
 
@@ -34,6 +39,7 @@ router.put("/packages/:id", adminUpdatePackage);
 router.delete("/packages/:id", adminDeletePackage);
 
 router.get("/orders", adminListOrders);
+router.get("/orders/stats", adminGetOrderStats); // এটা /orders/:id-এর মতো কোনো route এর সাথে conflict করবে না, কারণ সেটা PATCH
 router.get("/orders/export", adminExportOrders);
 router.patch("/orders/:id", adminUpdateOrderStatus);
 

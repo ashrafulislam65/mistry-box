@@ -3,12 +3,14 @@ generator client {
   output       = "../src/generated/prisma"
   moduleFormat = "cjs"
 }
+
 datasource db {
   provider = "postgresql"
 }
 
 enum OrderStatus {
   PENDING
+  ON_HOLD
   CONFIRMED
   DELIVERED
   CANCELLED
@@ -32,38 +34,60 @@ model Category {
 }
 
 model Package {
-  id               String   @id @default(uuid())
-  categoryId       String
-  category         Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  name             String
-  slug             String   @unique
-  price            Decimal  @db.Decimal(10, 2)
-  description      String
-  items            String[]
-  imageUrl         String?
-  isActive         Boolean  @default(true)
-  facebookPostUrl  String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  orders           Order[]
+  id              String        @id @default(uuid())
+  categoryId      String
+  category        Category      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name            String
+  slug            String        @unique
+  price           Decimal       @db.Decimal(10, 2) // base/reference price, tiers override this for ordering
+  deliveryCharge  Decimal       @default(99) @db.Decimal(10, 2)
+  description     String
+  items           String[]
+  imageUrl        String?
+  isActive        Boolean       @default(true)
+  facebookPostUrl String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  orders          Order[]
+  tiers           PackageTier[]
 
   @@map("packages")
 }
 
+model PackageTier {
+  id         String   @id @default(uuid())
+  packageId  String
+  package    Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  label      String // e.g. "৬ প্যাক"
+  quantity   Int // e.g. 6
+  price      Decimal  @db.Decimal(10, 2)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  orders     Order[]
+
+  @@map("package_tiers")
+}
+
 model Order {
-  id              String      @id @default(uuid())
-  packageId       String
-  package         Package     @relation(fields: [packageId], references: [id])
-  customerName    String
-  phone           String
-  address         String
-  quantity        Int         @default(1)
-  totalPrice      Decimal     @db.Decimal(10, 2)
-  status          OrderStatus @default(PENDING)
-  note            String?
-  source          String?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id             String       @id @default(uuid())
+  packageId      String
+  package        Package      @relation(fields: [packageId], references: [id])
+  packageTierId  String?
+  packageTier    PackageTier? @relation(fields: [packageTierId], references: [id], onDelete: SetNull)
+  tierLabel      String? // snapshot, tier পরে মুছে গেলেও হিসাব বদলাবে না
+  customerName   String
+  phone          String
+  address        String
+  quantity       Int          @default(1) // tier-এর quantity, informational
+  subtotal       Decimal      @default(0) @db.Decimal(10, 2)
+  deliveryCharge Decimal      @default(0) @db.Decimal(10, 2)
+  totalPrice     Decimal      @db.Decimal(10, 2)
+  status         OrderStatus  @default(PENDING)
+  note           String?
+  source         String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   @@map("orders")
 }
